@@ -2,18 +2,30 @@
 # 虛擬桌面 + VNC + Chrome 一鍵啟動腳本
 # 用法: ./start-vnc-chrome.sh [網址]
 # 預設開啟 pitchbook.com，可傳入其他網址
+#
+# 注意：此腳本只管理 VNC 用的 Chrome，不會影響 OpenClaw managed browser。
+#       兩個 Chrome 使用不同的 user-data-dir，互不干擾。
 
 set -e
 
 URL="${1:-https://pitchbook.com}"
 DISPLAY_NUM=99
 VNC_PORT=5900
+VNC_CHROME_PID_FILE="/tmp/vnc-chrome.pid"
 
 echo "=== 停止既有程序 ==="
 pkill -f "Xvfb :$DISPLAY_NUM" 2>/dev/null || true
 pkill -f "x11vnc.*display :$DISPLAY_NUM" 2>/dev/null || true
 pkill -f fluxbox 2>/dev/null || true
-pkill -f "google-chrome-stable.*--no-sandbox" 2>/dev/null || true
+# 只停止 VNC 的 Chrome（透過 PID 檔），不影響 OpenClaw managed browser
+if [ -f "$VNC_CHROME_PID_FILE" ]; then
+  VNC_CHROME_PID=$(cat "$VNC_CHROME_PID_FILE")
+  if kill -0 "$VNC_CHROME_PID" 2>/dev/null; then
+    echo "停止先前的 VNC Chrome (PID: $VNC_CHROME_PID)..."
+    kill "$VNC_CHROME_PID" 2>/dev/null || true
+  fi
+  rm -f "$VNC_CHROME_PID_FILE"
+fi
 sleep 2
 
 echo "=== 清理 lock 檔 ==="
@@ -40,7 +52,7 @@ else
 fi
 sleep 1
 
-echo "=== 啟動 Chrome ==="
+echo "=== 啟動 Chrome（VNC 用，獨立於 OpenClaw）==="
 nohup google-chrome-stable \
   --no-sandbox \
   --disable-dev-shm-usage \
@@ -48,6 +60,9 @@ nohup google-chrome-stable \
   --disable-software-rasterizer \
   --disable-features=OnDeviceModel \
   "$URL" > /tmp/chrome.log 2>&1 &
+# 記錄 PID，供 stop-vnc-chrome.sh 精準停止（不影響 OpenClaw Chrome）
+echo $! > "$VNC_CHROME_PID_FILE"
+echo "VNC Chrome PID: $(cat "$VNC_CHROME_PID_FILE")"
 
 echo ""
 echo "=== 完成 ==="

@@ -1,210 +1,238 @@
-# 無 GUI VM 上登入需驗證的網站（對抗 Cloudflare）實務指南
+# 無 GUI VM 上登入需驗證的網站指南
 
-你在 headless VM 上，無法手動完成 Cloudflare 人機驗證。以下是幾種可行方案，依推薦順序排列。
+在 headless VM 上，某些網站（如有 Cloudflare 防護的網站）需要手動完成人機驗證才能登入。本指南說明如何搭配 VNC 虛擬桌面與 OpenClaw managed browser 來處理這個問題。
 
 ---
 
-## 方案一：VNC + 虛擬顯示（最推薦）
+## 推薦方案：VNC + OpenClaw Managed Browser
 
-**原理**：在 VM 上跑一個「虛擬桌面」，用 VNC 從手機/筆電連進去，手動完成驗證後，再由 OpenClaw 接手。
+**這是最穩定、最實用的方案。**
+
+### 原理
+
+```
+你的電腦 → VNC → Xvfb 虛擬桌面 → OpenClaw Chrome（CDP 直連）
+                                      ↕
+                              OpenClaw Gateway（自動控制）
+```
+
+1. VM 上跑 Xvfb 虛擬桌面 + VNC
+2. OpenClaw 啟動一個專屬的 managed Chrome（透過 CDP 直連控制）
+3. 需要登入時，你透過 VNC 連入，手動完成驗證
+4. 登入後，OpenClaw 直接透過 CDP 接手控制頁面
+
+### 為什麼不用 Chrome Extension Relay？
+
+| | Managed Browser（推薦） | Chrome Extension Relay（舊方案） |
+|---|---|---|
+| 連線穩定性 | **高** — CDP 直連，不掉線 | 低 — extension WebSocket 中繼，常斷線 |
+| 需手動操作 | 只需登入時 | 每次都要點 extension icon |
+| Playwright 支援 | 完整（snapshot/click/type 等） | 部分 |
+| 控制方式 | OpenClaw 管理整個 Chrome 生命週期 | 依賴 extension 轉發 |
+
+---
+
+## 設定步驟
 
 ### 1. 安裝必要套件
 
 ```bash
 sudo apt update
-sudo apt install -y xvfb x11vnc fluxbox google-chrome-stable
+sudo apt install -y xvfb x11vnc fluxbox
 ```
 
 - **Xvfb**：虛擬螢幕（無實體顯示器也能跑 GUI）
 - **x11vnc**：VNC 伺服器
-- **fluxbox**：輕量視窗管理員
-- **Chrome**：你已有，可略過
+- **fluxbox**：輕量視窗管理器
+- **Chrome**：由 `setup-openclaw-browser.sh` 自動安裝（如未安裝）
 
 ### 2. 設定 VNC 密碼（建議）
-
-第一次使用前，建議設定 VNC 密碼以保護連線安全：
 
 ```bash
 mkdir -p ~/.vnc
 x11vnc -storepasswd ~/.vnc/passwd
 ```
 
-依提示輸入兩次密碼，密碼會加密儲存。未設定時腳本會以無密碼模式運行（僅限 localhost）。
+依提示輸入兩次密碼。未設定則以無密碼模式運行（僅限 localhost）。
 
-### 3. 啟動虛擬桌面 + VNC
+### 3. 啟動虛擬桌面
 
 ```bash
-# 建立虛擬顯示
-Xvfb :99 -screen 0 1920x1080x24 &
-export DISPLAY=:99
-
-# 啟動視窗管理器
-fluxbox &
-
-# 啟動 Chrome（非 headless，會顯示在虛擬桌面）
-google-chrome-stable --no-sandbox --disable-dev-shm-usage &
-sleep 5
-
-# 啟動 VNC 伺服器（僅監聽 localhost）
-# 有密碼檔時：x11vnc -display :99 -forever -shared -rfbport 5900 -rfbauth ~/.vnc/passwd -listen 127.0.0.1 &
-# 無密碼時：x11vnc -display :99 -forever -shared -rfbport 5900 -nopw -listen 127.0.0.1 &
-x11vnc -display :99 -forever -shared -rfbport 5900 -nopw -listen 127.0.0.1 &
+cd ~/openclaw-guide
+./start-vnc-chrome.sh
 ```
 
-### 4. 從外部連線到 VNC
-
-你的 VM 有 Tailscale，可用 Tailscale IP 連線：
+### 4. 設定 OpenClaw Managed Browser
 
 ```bash
-# 在 VM 上查 Tailscale IP
+./setup-openclaw-browser.sh
+```
+
+此腳本會：
+- 安裝 Playwright + 系統依賴
+- 設定 OpenClaw browser 為非 headless 模式（在虛擬桌面顯示）
+- 在 Gateway systemd service 加入 `DISPLAY=:99`
+- 重啟 Gateway 並啟動 managed browser
+
+### 5. VNC 連線方式
+
+**SSH 轉發（推薦，較安全）：**
+```bash
+# 在你的電腦上執行
+ssh -L 5900:localhost:5900 ubuntu@<VM的IP或Tailscale-IP>
+# 然後用 VNC 客戶端連到 localhost:5900
+```
+
+**直接 Tailscale 連線：**
+```bash
+# 查 Tailscale IP
 tailscale ip -4
+# 用 VNC 客戶端連到 <Tailscale-IP>:5900
 ```
-
-**在另一台有 GUI 的裝置（筆電、手機）上：**
-
-- **選項 A：SSH 轉發（較安全）**
-  ```bash
-  ssh -L 5900:localhost:5900 ubuntu@<你的VM的Tailscale-IP>
-  ```
-  然後用 VNC 客戶端連到 `localhost:5900`
-
-- **選項 B：直接用 Tailscale**
-  若 VM 有裝 Tailscale，用 VNC 客戶端連到 `<VM的Tailscale-IP>:5900`
 
 **VNC 客戶端建議：**
 - 電腦：TigerVNC、Remmina、RealVNC
-- 手機：VNC Viewer (iOS/Android)
-
-**VNC 密碼**：若已執行 `x11vnc -storepasswd ~/.vnc/passwd`，連線時會要求輸入密碼；未設定則可直接連入。
-
-### 5. 手動完成登入後
-
-1. 在 VNC 視窗裡打開目標網站（例如需登入的網站）
-2. 手動完成 Cloudflare 驗證
-3. 輸入帳密登入
-4. 登入成功後，OpenClaw 理論上可以透過同一瀏覽器 session 或 cookie 接手（需視 OpenClaw 實作而定）
+- 手機：VNC Viewer（iOS/Android）
 
 ---
 
-## 方案二：Docker 預裝環境（最省事）
+## 登入流程
+
+### 步驟一：用 OpenClaw 開啟目標網站
+
+```bash
+openclaw browser --browser-profile openclaw open https://目標網站.com
+```
+
+或透過 OpenClaw agent 對話：
+> 「幫我開啟 https://目標網站.com」
+
+### 步驟二：透過 VNC 手動登入
+
+1. 用 VNC 客戶端連線到虛擬桌面
+2. 你會看到 OpenClaw 的 Chrome 視窗（橘色 UI 色調）
+3. 手動完成 Cloudflare 驗證 / 輸入帳密
+4. 確認登入成功
+
+### 步驟三：OpenClaw 接手
+
+登入完成後，OpenClaw 就能自動控制該頁面：
+
+```bash
+# 擷取頁面快照（確認已登入）
+openclaw browser --browser-profile openclaw snapshot
+
+# 截圖確認
+openclaw browser --browser-profile openclaw screenshot
+```
+
+或直接透過 agent 對話操作頁面。
+
+---
+
+## 常用指令速查
+
+```bash
+# 瀏覽器管理
+openclaw browser --browser-profile openclaw status      # 查看狀態
+openclaw browser --browser-profile openclaw start       # 啟動
+openclaw browser --browser-profile openclaw stop        # 停止
+openclaw browser --browser-profile openclaw tabs        # 列出分頁
+openclaw browser --browser-profile openclaw open URL    # 開啟網址
+
+# 頁面操作
+openclaw browser --browser-profile openclaw snapshot    # AI snapshot（含 ref）
+openclaw browser --browser-profile openclaw screenshot  # 截圖
+openclaw browser --browser-profile openclaw click <ref> # 點擊元素
+openclaw browser --browser-profile openclaw type <ref> "文字"  # 輸入文字
+
+# Cookie / Session 管理
+openclaw browser --browser-profile openclaw cookies                      # 查看 cookies
+openclaw browser --browser-profile openclaw cookies set <name> <value>   # 設定 cookie
+openclaw browser --browser-profile openclaw storage local get            # 查看 localStorage
+```
+
+---
+
+## 疑難排解
+
+### Q: OpenClaw browser 顯示 "running: false"
+
+```bash
+# 確認 Xvfb 是否運行
+pgrep -f "Xvfb :99" || echo "Xvfb 未啟動，請先 ./start-vnc-chrome.sh"
+
+# 確認 Gateway 是否有 DISPLAY 環境變數
+grep DISPLAY ~/.config/systemd/user/openclaw-gateway.service
+
+# 手動啟動
+openclaw browser --browser-profile openclaw start
+```
+
+### Q: snapshot 回傳空白或錯誤
+
+```bash
+# 檢查 Playwright 是否已安裝
+ls ~/.openclaw/node_modules/playwright
+
+# 如果沒有，重新執行設定腳本
+./setup-openclaw-browser.sh
+```
+
+### Q: 停止 VNC 後 OpenClaw browser 無法使用
+
+OpenClaw 非 headless 模式依賴 Xvfb 虛擬桌面。停止 VNC 時，請使用 `--chrome-only` 保留虛擬桌面：
+
+```bash
+# 只停止 VNC 用的 Chrome，保留 Xvfb（OpenClaw 需要）
+./stop-vnc-chrome.sh --chrome-only
+
+# 如果完全停止了，重新啟動
+./start-vnc-chrome.sh
+openclaw browser --browser-profile openclaw start
+```
+
+### Q: 從 Chrome Extension Relay 遷移
+
+如果之前使用 Chrome Extension Relay（`chrome` profile），現在想改用 managed browser：
+
+```bash
+# 確認 defaultProfile 已設為 openclaw
+openclaw config get browser.defaultProfile
+# 應該顯示 "openclaw"
+
+# 如果不是，重新設定
+openclaw config set browser.defaultProfile openclaw
+```
+
+不需要移除 Chrome extension，它不會影響 managed browser。
+
+---
+
+## 其他方案（備參考）
+
+以下方案在特殊情況下可能有用，但一般建議使用上述推薦方案。
+
+### Docker 預裝環境
 
 使用已整合 Xvfb + VNC + Chrome 的 Docker 映像：
 
 ```bash
-# 拉取並執行
 docker run -d --name vnc-browser \
   -p 5901:5901 \
   -p 6901:6901 \
   -e VNC_PASSWORD=your_password \
   accetto/xubuntu-vnc-novnc-chrome
 
-# 連線方式：
-# VNC: <VM-IP>:5901
-# noVNC (瀏覽器直接開): http://<VM-IP>:6901
+# noVNC（瀏覽器直接開）: http://<VM-IP>:6901
 ```
 
-有 GUI 的裝置用瀏覽器開 `http://<VM-IP>:6901` 即可操作，無需安裝 VNC 客戶端。
+### 2Captcha 付費服務（全自動）
 
----
-
-## 方案三：2Captcha 付費服務（全自動）
-
-若想完全自動化、不手動操作，可付費使用 CAPTCHA 破解服務。
-
-### 流程
-
-1. 用 Puppeteer/Playwright 控制 Chrome
-2. 遇到 Cloudflare Turnstile 時，呼叫 2Captcha API
-3. 取得 token 後注入頁面，繼續登入流程
-
-### 成本
-
-- 2Captcha：約 $3/1000 次 Turnstile
-- 需撰寫整合腳本
-
-### 參考資源
-
+需完全自動化驗證時：
 - [2Captcha Cloudflare Turnstile 教學](https://2captcha.com/api-docs/cloudflare-turnstile)
-- [Puppeteer + 2Captcha  bypass 範例](https://2captcha.com/blog/bypassing-cloudflare-challenge-with-puppeteer-and-2captcha)
+- 約 $3/1000 次 Turnstile
 
----
+### Cookie 匯入
 
-## 方案四：undetected-chromedriver（降低偵測率）
-
-可降低被 Cloudflare 偵測為 bot 的機率，但**無法保證**通過人機驗證。
-
-```bash
-pip install undetected-chromedriver selenium
-```
-
-```python
-import undetected_chromedriver as uc
-
-options = uc.ChromeOptions()
-options.add_argument('--no-sandbox')
-driver = uc.Chrome(options=options)
-driver.get('https://example.com')  # 替換成你的目標網址
-# 仍有機會被 Cloudflare 擋下
-```
-
----
-
-## 方案五：Cookie 匯入（需有另一台有 GUI 的電腦）
-
-若你有另一台可手動登入的電腦：
-
-1. 在有 GUI 的電腦登入目標網站，完成 Cloudflare 驗證
-2. 匯出 Cookies（可用瀏覽器擴充如 EditThisCookie）
-3. 將 Cookies 匯入 VM 上的 headless 瀏覽器 session
-
-**限制**：該網站可能有額外檢查（IP、fingerprint），Cookie 可能很快失效。
-
----
-
-## 總結建議
-
-| 情境 | 建議方案 |
-|------|----------|
-| 偶爾登入、可接受手動驗證 | **方案一或二**（VNC） |
-| 需完全自動化、可付費 | **方案三**（2Captcha） |
-| 想先試試看能否自動過 | **方案四**（undetected-chromedriver） |
-
-對 headless VM 而言，**方案一（VNC）** 最實務：你從手機/筆電連進去，手動完成驗證，之後可再研究如何讓 OpenClaw 接手已登入的 session。
-
----
-
-## 一鍵啟動腳本（方案一）
-
-專案內含 `start-vnc-chrome.sh` 與 `stop-vnc-chrome.sh`。
-
-### 首次使用：設定 VNC 密碼（建議）
-
-```bash
-mkdir -p ~/.vnc
-x11vnc -storepasswd ~/.vnc/passwd
-```
-
-依提示輸入兩次密碼。未設定則以無密碼模式運行（僅限 localhost，較不安全）。
-
-### 啟動與停止
-
-```bash
-cd /home/ubuntu/openclaw-guide
-
-# 啟動（預設開啟指定網址，可傳入參數指定需登入的網站）
-./start-vnc-chrome.sh
-
-# 指定網址
-./start-vnc-chrome.sh https://example.com
-
-# 停止
-./stop-vnc-chrome.sh
-```
-
-### 連線方式
-
-1. 在另一台有 GUI 的裝置執行：`ssh -L 5900:localhost:5900 ubuntu@<VM-IP>`
-2. 用 VNC 客戶端連到 `localhost:5900`
-3. 若已設定密碼，連線時輸入密碼
-
-腳本會自動偵測 `~/.vnc/passwd`：存在則啟用密碼驗證，不存在則無密碼運行。
+在有 GUI 的電腦登入後匯出 Cookies，再匯入 VM 上的瀏覽器 session。限制：可能很快失效。
