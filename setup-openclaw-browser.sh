@@ -216,8 +216,8 @@ echo ""
 echo "=== 6. 驗證 ==="
 # =============================================================================
 
-info "開啟測試頁面 https://example.com ..."
-openclaw browser --browser-profile openclaw open https://example.com 2>&1 || true
+info "開啟測試頁面 https://google.com ..."
+openclaw browser --browser-profile openclaw open https://google.com 2>&1 || true
 sleep 3
 
 info "列出 tabs："

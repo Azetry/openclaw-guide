@@ -1,61 +1,35 @@
 # Update Log
 
-> Generated: 2026-02-14 21:30 (+00:00)
-> v0.0.0 → v0.1.0
+> Generated: 2026-02-23 12:00 (+00:00)
+> v0.1.0 → v0.1.1
 
 ## Recommended Commit Message
 
-feat: add managed browser setup and restructure docs for stable CDP-based browser control
+update: change browser verification test URL from example.com to google.com
 <details>
 <summary>翻譯</summary>
-feat: 新增 managed browser 設定腳本，重構文件以支援穩定的 CDP 瀏覽器控制方案
+update: 將瀏覽器驗證測試網址從 example.com 改為 google.com
 </details>
 
 ***
 
 ## Summary
 
-Add OpenClaw managed browser setup script and comprehensive browser control guide, replacing the unstable Chrome Extension Relay approach with direct CDP control. Restructure all documentation and fix VNC scripts to coexist safely with OpenClaw's managed Chrome instance.
+Change the default test URL in the browser setup verification step from `example.com` to `google.com` for more reliable connectivity testing.
 <details>
 <summary>翻譯</summary>
-新增 OpenClaw managed browser 設定腳本和完整的瀏覽器控制指南，以 CDP 直連取代不穩定的 Chrome Extension Relay 方案。重構所有文件，並修改 VNC 腳本使其能與 OpenClaw 的 managed Chrome 安全共存。
+將瀏覽器設定驗證步驟的預設測試網址從 `example.com` 改為 `google.com`，以提供更可靠的連線測試。
 </details>
 
 ## Changes
 
-### FEAT
-- Add `setup-openclaw-browser.sh`: one-click setup for OpenClaw managed browser with Xvfb virtual desktop, including Playwright installation, gateway DISPLAY config, and browser verification
-- Add `BROWSER-CONTROL-GUIDE.md`: comprehensive reference for all browser control modes, CLI commands, snapshot/ref system, debug workflows, and security notes
-
-<details>
-<summary>翻譯</summary>
-
-- 新增 `setup-openclaw-browser.sh`：一鍵設定 OpenClaw managed browser，搭配 Xvfb 虛擬桌面，包含 Playwright 安裝、Gateway DISPLAY 設定、瀏覽器驗證
-- 新增 `BROWSER-CONTROL-GUIDE.md`：完整的瀏覽器控制參考手冊，涵蓋所有控制模式、CLI 指令、snapshot/ref 系統、debug 流程和安全注意事項
-
-</details>
-
 ### UPDATE
-- Refactor `start-vnc-chrome.sh` to use PID file (`/tmp/vnc-chrome.pid`) instead of `pkill` pattern matching, preventing accidental termination of OpenClaw's managed Chrome
-- Refactor `stop-vnc-chrome.sh` to use PID-based Chrome termination, add `--chrome-only` flag to preserve Xvfb for OpenClaw, and add safety check when OpenClaw browser is running
+- Change browser verification test URL from `https://example.com` to `https://google.com` in setup script step 6
 
 <details>
 <summary>翻譯</summary>
 
-- 重構 `start-vnc-chrome.sh`，改用 PID 檔（`/tmp/vnc-chrome.pid`）取代 `pkill` 模式匹配，避免意外終止 OpenClaw 的 managed Chrome
-- 重構 `stop-vnc-chrome.sh`，改用 PID 停止 Chrome，新增 `--chrome-only` 參數保留 Xvfb 給 OpenClaw 使用，並在 OpenClaw browser 運行時加入安全提示
-
-</details>
-
-### DOC
-- Rewrite `README.md` with project structure overview, quick-start flow (Step 1-5), VNC setup section, managed browser setup section, script reference table, and ASCII architecture diagram
-- Rewrite `HEADLESS-LOGIN-GUIDE.md` to recommend managed browser over Chrome Extension Relay, add comparison table, streamline login flow, add troubleshooting FAQ
-
-<details>
-<summary>翻譯</summary>
-
-- 重寫 `README.md`，加入專案結構總覽、快速開始流程（Step 1-5）、VNC 設定章節、managed browser 設定章節、腳本速查表、ASCII 架構圖
-- 重寫 `HEADLESS-LOGIN-GUIDE.md`，推薦 managed browser 取代 Chrome Extension Relay，加入比較表、精簡登入流程、新增疑難排解 FAQ
+- 將設定腳本步驟 6 的瀏覽器驗證測試網址從 `https://example.com` 改為 `https://google.com`
 
 </details>
 
@@ -65,12 +39,7 @@ Add OpenClaw managed browser setup script and comprehensive browser control guid
 
 | File | Status | Tag |
 |------|--------|-----|
-| `setup-openclaw-browser.sh` | Added | FEAT |
-| `BROWSER-CONTROL-GUIDE.md` | Added | FEAT |
-| `start-vnc-chrome.sh` | Modified | UPDATE |
-| `stop-vnc-chrome.sh` | Modified | UPDATE |
-| `README.md` | Modified | DOC |
-| `HEADLESS-LOGIN-GUIDE.md` | Modified | DOC |
+| `setup-openclaw-browser.sh` | Modified | UPDATE |
 
 ***
 
