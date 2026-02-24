@@ -1,35 +1,41 @@
 # Update Log
 
-> Generated: 2026-02-23 12:00 (+00:00)
-> v0.1.0 → v0.1.1
+> Generated: 2026-02-24 12:00 (+00:00)
+> v0.1.1（無版本升級，僅文件變更）
 
 ## Recommended Commit Message
 
-update: change browser verification test URL from example.com to google.com
+docs: 補充 Tailscale 安裝與 Gateway Token 生成說明
 <details>
 <summary>翻譯</summary>
-update: 將瀏覽器驗證測試網址從 example.com 改為 google.com
+docs: add Tailscale install and Gateway Token generation instructions
 </details>
 
 ***
 
 ## Summary
 
-Change the default test URL in the browser setup verification step from `example.com` to `google.com` for more reliable connectivity testing.
+補充 README 安裝流程：新增 Tailscale 安裝指令、於 OpenClaw 設定階段加入 Gateway Token 生成步驟，並於常用指令速查表加入 token 相關指令。
 <details>
 <summary>翻譯</summary>
-將瀏覽器設定驗證步驟的預設測試網址從 `example.com` 改為 `google.com`，以提供更可靠的連線測試。
+Update README setup flow: add Tailscale install commands, Gateway Token generation step during OpenClaw setup, and token-related commands to quick reference.
 </details>
 
 ## Changes
 
-### UPDATE
-- Change browser verification test URL from `https://example.com` to `https://google.com` in setup script step 6
+### DOC
+- 前置準備：新增 Tailscale 安裝指令 `curl -fsSL https://tailscale.com/install.sh | sh` 與 `sudo tailscale up`
+- 安裝 OpenClaw：新增步驟 7「生成 Gateway Token」，含 `openclaw doctor --generate-gateway-token` 與 `openssl rand -hex 32`
+- 新增 5.1 節「重新產生 Gateway Token（選用）」說明
+- 常用指令：加入 `openclaw doctor --generate-gateway-token` 與 `openssl rand -hex 32`
 
 <details>
 <summary>翻譯</summary>
 
-- 將設定腳本步驟 6 的瀏覽器驗證測試網址從 `https://example.com` 改為 `https://google.com`
+- Prerequisites: add Tailscale install command and sudo tailscale up
+- Install OpenClaw: add step 7 "Generate Gateway Token" with openclaw doctor and openssl rand commands
+- Add section 5.1 "Regenerate Gateway Token (optional)"
+- Quick reference: add token-related commands
 
 </details>
 
@@ -39,7 +45,7 @@ Change the default test URL in the browser setup verification step from `example
 
 | File | Status | Tag |
 |------|--------|-----|
-| `setup-openclaw-browser.sh` | Modified | UPDATE |
+| `README.md` | Modified | DOC |
 
 ***
 

@@ -31,9 +31,10 @@ Step 5: 裝置配對               → 第 8~9 節
 
 ## 1. 前置準備
 
-確保已安裝 Tailscale 並登入：
+安裝 Tailscale（若尚未安裝）並登入：
 ```bash
-tailscale up
+curl -fsSL https://tailscale.com/install.sh | sh
+sudo tailscale up
 ```
 
 安裝 VNC 虛擬桌面所需套件（若尚未安裝）：
@@ -56,6 +57,14 @@ curl -fsSL https://openclaw.ai/install.sh | bash
 4. 完成瀏覽器驗證流程。
 5. 記下預設 Port（通常為 **18789**）。
 6. **建議**：當被問及是否安裝 Gateway Service 時，選擇 `Yes`，這樣 OpenClaw 就會作為 systemd 服務在背景自動執行，即使關閉終端機也不會中斷。
+7. **生成 Gateway Token**（若安裝時未自動產生）：
+   ```bash
+   openclaw doctor --generate-gateway-token
+   ```
+   或手動產生 hex 後更新 systemd service：
+   ```bash
+   openssl rand -hex 32
+   ```
 
 ## 3. 設定 Tailscale 權限（關鍵步驟）
 
@@ -94,6 +103,13 @@ tailscale serve --bg http://localhost:18789
    ```
 
 3. **在瀏覽器開啟該網址**。
+
+### 5.1 重新產生 Gateway Token（選用）
+
+若遺失或需更換 Token，請執行：
+```bash
+openclaw doctor --generate-gateway-token
+```
 
 ## 6. 安裝 VNC 虛擬桌面
 
@@ -249,6 +265,8 @@ tailscale serve --https=443 off                     # 停止分享
 
 # OpenClaw
 openclaw dashboard --no-open                        # 取得 Dashboard Token
+openclaw doctor --generate-gateway-token            # 生成新 Gateway Token
+openssl rand -hex 32                                # 手動產生 hex 亂碼（Token 用）
 journalctl --user -u openclaw-gateway -f            # 查看 Gateway 日誌
 ss -tuln | grep 18789                               # 確認 Port 是否聆聽中
 
