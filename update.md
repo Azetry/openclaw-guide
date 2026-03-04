@@ -1,41 +1,51 @@
 # Update Log
 
-> Generated: 2026-02-24 12:00 (+00:00)
-> v0.1.1（無版本升級，僅文件變更）
+> Generated: 2026-03-04 12:00 (+00:00)
+> v0.1.1 → v0.2.0
 
 ## Recommended Commit Message
 
-docs: 補充 Tailscale 安裝與 Gateway Token 生成說明
+feat: add docs structure and backup scripts for single-agent OpenClaw guide
 <details>
 <summary>翻譯</summary>
-docs: add Tailscale install and Gateway Token generation instructions
+feat: 新增單 Agent OpenClaw 指南的 docs 結構與備份腳本
 </details>
 
 ***
 
 ## Summary
 
-補充 README 安裝流程：新增 Tailscale 安裝指令、於 OpenClaw 設定階段加入 Gateway Token 生成步驟，並於常用指令速查表加入 token 相關指令。
+重構 openclaw-guide：新增 docs/ 分章節文件（架構、環境、備份、Bootstrap、核心 Markdown、版控、openclaw.json、Heartbeat/Cron、Workspace 結構、故障排除、快速參考）與 scripts/ 進階備份腳本（init-workspace、setup-config-mirror、openclaw-full-backup、restore-full-backup、restore-golden-config、openclaw-git-backup）。README 改為總覽式，聚焦適用對象與設計原則。
 <details>
 <summary>翻譯</summary>
-Update README setup flow: add Tailscale install commands, Gateway Token generation step during OpenClaw setup, and token-related commands to quick reference.
+Refactor openclaw-guide: add docs/ structure (architecture, environment, backup, bootstrap, core markdown, version control, openclaw.json, heartbeat/cron, workspace structure, troubleshooting, quick reference) and scripts/ backup scripts (init-workspace, setup-config-mirror, openclaw-full-backup, restore-full-backup, restore-golden-config, openclaw-git-backup). README restructured as overview with target audience and design principles.
 </details>
 
 ## Changes
 
-### DOC
-- 前置準備：新增 Tailscale 安裝指令 `curl -fsSL https://tailscale.com/install.sh | sh` 與 `sudo tailscale up`
-- 安裝 OpenClaw：新增步驟 7「生成 Gateway Token」，含 `openclaw doctor --generate-gateway-token` 與 `openssl rand -hex 32`
-- 新增 5.1 節「重新產生 Gateway Token（選用）」說明
-- 常用指令：加入 `openclaw doctor --generate-gateway-token` 與 `openssl rand -hex 32`
+### FEAT
+- 新增 docs/ 目錄：10 個分章節文件涵蓋單 Agent 完整安裝與設定流程
+- 新增 scripts/ 目錄：6 個進階備份腳本（workspace 初始化、config mirror、加密全量備份、恢復、Golden Config、Git 備份）
 
 <details>
 <summary>翻譯</summary>
 
-- Prerequisites: add Tailscale install command and sudo tailscale up
-- Install OpenClaw: add step 7 "Generate Gateway Token" with openclaw doctor and openssl rand commands
-- Add section 5.1 "Regenerate Gateway Token (optional)"
-- Quick reference: add token-related commands
+- Add docs/ directory: 10 phase files covering complete single-agent setup flow
+- Add scripts/ directory: 6 backup scripts (workspace init, config mirror, encrypted full backup, restore, golden config, git backup)
+
+</details>
+
+### DOC
+- README 重構：新增適用對象、設計原則、精簡版安裝流程
+- 專案結構更新：加入 docs/ 與 scripts/ 說明
+- 腳本速查表：新增備份腳本區塊
+
+<details>
+<summary>翻譯</summary>
+
+- README restructure: add target audience, design principles, condensed install flow
+- Project structure: add docs/ and scripts/ documentation
+- Script quick reference: add backup scripts section
 
 </details>
 
@@ -46,6 +56,23 @@ Update README setup flow: add Tailscale install commands, Gateway Token generati
 | File | Status | Tag |
 |------|--------|-----|
 | `README.md` | Modified | DOC |
+| `docs/01-architecture.md` | Added | FEAT |
+| `docs/02-phase0-environment.md` | Added | FEAT |
+| `docs/03-phase1-backup.md` | Added | FEAT |
+| `docs/04-phase2-bootstrap.md` | Added | FEAT |
+| `docs/05-phase3-core-markdown.md` | Added | FEAT |
+| `docs/05b-phase35-version-control.md` | Added | FEAT |
+| `docs/06-phase4-openclaw-json.md` | Added | FEAT |
+| `docs/07-phase11-heartbeat-cron.md` | Added | FEAT |
+| `docs/08-phase8-workspace-structure.md` | Added | FEAT |
+| `docs/09-troubleshooting.md` | Added | FEAT |
+| `docs/10-quick-reference.md` | Added | FEAT |
+| `scripts/init-workspace.sh` | Added | FEAT |
+| `scripts/setup-config-mirror.sh` | Added | FEAT |
+| `scripts/openclaw-full-backup.sh` | Added | FEAT |
+| `scripts/restore-full-backup.sh` | Added | FEAT |
+| `scripts/restore-golden-config.sh` | Added | FEAT |
+| `scripts/openclaw-git-backup.sh` | Added | FEAT |
 
 ***
 
